@@ -1,0 +1,2 @@
+# The project intentionally uses only Python's standard library.
+# ffprobe is optional: when installed it extends audio support beyond WAV.
