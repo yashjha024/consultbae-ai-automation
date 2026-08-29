@@ -3,3 +3,5 @@ __pycache__/
 data/*.sqlite3
 storage/uploads/*
 !storage/uploads/.gitkeep
+ConsultBae_Assignment.pdf
+test_audio.wav

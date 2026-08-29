@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import cgi
 import json
+import mimetypes
 import shutil
 import uuid
 from pathlib import Path
@@ -22,6 +23,18 @@ def _json(start_response, status: str, payload: object):
     body = json.dumps(payload, default=str).encode()
     start_response(status, [("Content-Type", "application/json"), ("Content-Length", str(len(body)))])
     return [body]
+
+
+def _static(start_response, file_path: Path):
+    if not file_path.exists() or not file_path.is_file():
+        return _json(start_response, "404 Not Found", {"error": "not found"})
+    content_type, _ = mimetypes.guess_type(str(file_path))
+    content_type = content_type or "application/octet-stream"
+    size = file_path.stat().st_size
+    start_response("200 OK", [("Content-Type", content_type), ("Content-Length", str(size))])
+    with file_path.open("rb") as f:
+        return [f.read()]
+
 
 
 def _person(conn, name: str | None, phone: str | None, email: str | None):
@@ -43,6 +56,16 @@ def app(db_path: str | Path, upload_dir: str | Path):
         conn = connect(db_path)
         try:
             method, path = environ["REQUEST_METHOD"], environ["PATH_INFO"]
+            
+            if method == "GET":
+                if path.startswith("/uploads/"):
+                    filename = path[len("/uploads/"):]
+                    return _static(start_response, upload_dir / filename)
+                if path == "/":
+                    return _static(start_response, Path("frontend/index.html"))
+                if path in ("/style.css", "/app.js"):
+                    return _static(start_response, Path("frontend") / path.lstrip("/"))
+
             if method == "GET" and path == "/health":
                 return _json(start_response, "200 OK", {"ok": True})
             if method == "GET" and path == "/submissions":
@@ -56,7 +79,7 @@ def app(db_path: str | Path, upload_dir: str | Path):
             if method == "POST" and path == "/audio":
                 form = cgi.FieldStorage(fp=environ["wsgi.input"], environ=environ, keep_blank_values=True)
                 uploaded = form["audio"] if "audio" in form else None
-                if not uploaded or not getattr(uploaded, "file", None) or not uploaded.filename:
+                if uploaded is None or not getattr(uploaded, "file", None) or not getattr(uploaded, "filename", None):
                     return _json(start_response, "400 Bad Request", {"error": "multipart field 'audio' is required"})
                 suffix = Path(uploaded.filename).suffix.casefold()
                 stored = upload_dir / f"{uuid.uuid4().hex}{suffix}"

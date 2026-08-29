@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsultBae - Audio Submissions</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>ConsultBae Audio Portal</h1>
+            <nav>
+                <button id="nav-submit" class="active">Submit Audio</button>
+                <button id="nav-list">View Submissions</button>
+            </nav>
+        </header>
+
+        <main id="view-submit" class="view active-view">
+            <form id="audio-form">
+                <div class="input-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g. Jane Doe">
+                </div>
+                <div class="input-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="text" id="phone" name="phone" required placeholder="+91 90000 00000">
+                </div>
+                
+                <div class="input-group">
+                    <label>Audio Source</label>
+                    <div class="audio-source-toggle">
+                        <input type="radio" id="mode-upload" name="audio-mode" value="upload" checked>
+                        <label for="mode-upload">Upload File</label>
+                        
+                        <input type="radio" id="mode-record" name="audio-mode" value="record">
+                        <label for="mode-record">Record Now</label>
+                    </div>
+                </div>
+
+                <div id="section-upload" class="audio-section active-section">
+                    <input type="file" id="audio-file" name="audio" accept="audio/*">
+                </div>
+
+                <div id="section-record" class="audio-section">
+                    <div class="record-controls">
+                        <button type="button" id="btn-record" class="btn-record">Start Recording</button>
+                        <button type="button" id="btn-stop" class="btn-stop" disabled>Stop Recording</button>
+                    </div>
+                    <audio id="record-preview" controls class="hidden"></audio>
+                </div>
+
+                <div class="error-message hidden" id="form-error"></div>
+                <div class="success-message hidden" id="form-success"></div>
+
+                <button type="submit" id="btn-submit" class="btn-primary">Submit Application</button>
+            </form>
+        </main>
+
+        <main id="view-list" class="view hidden">
+            <div class="table-container">
+                <table id="submissions-table">
+                    <thead>
+                        <tr>
+                            <th>Applicant</th>
+                            <th>Duration</th>
+                            <th>Sample Rate</th>
+                            <th>Bitrate</th>
+                            <th>Loudness</th>
+                            <th>Playback</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissions-body">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+                <div id="list-empty" class="hidden">No submissions found.</div>
+            </div>
+        </main>
+    </div>
+    <script src="/app.js"></script>
+</body>
+</html>
