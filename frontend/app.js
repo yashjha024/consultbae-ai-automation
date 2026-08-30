@@ -296,6 +296,26 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.innerHTML = `<div class="spinner" style="width: 1.25rem; height: 1.25rem; border-width: 2px; border-top-color: white; margin: 0; display: inline-block; vertical-align: text-bottom;"></div> Submitting...`;
         btnSubmit.disabled = true;
 
+        // Trigger n8n automation for duplicate detection
+        const n8nWebhookUrl = window.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/consultbae-duplicate-check';
+        try {
+            // Send as FormData to ensure the browser makes a "simple request" and skips the CORS preflight.
+            // This guarantees n8n receives the POST payload even if n8n doesn't return CORS headers.
+            const n8nData = new FormData();
+            n8nData.append('name', name);
+            n8nData.append('phone', phone);
+            n8nData.append('email', ''); 
+
+            await fetch(n8nWebhookUrl, {
+                method: 'POST',
+                // no-cors mode tells the browser we don't need to read the response, avoiding CORS errors
+                mode: 'no-cors',
+                body: n8nData
+            }).catch(err => console.warn('n8n webhook warning:', err));
+        } catch (e) {
+            console.warn('n8n webhook failed:', e);
+        }
+
         try {
             const res = await fetch('/audio', {
                 method: 'POST',
