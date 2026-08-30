@@ -11,12 +11,14 @@ import mimetypes
 import shutil
 import uuid
 from pathlib import Path
-from urllib.parse import parse_qs
 from wsgiref.simple_server import make_server
 
 from .audio import AudioAnalysisError, analyze_audio
 from .database import connect
 from .normalization import normalize_email, normalize_name, normalize_phone
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 
 def _json(start_response, status: str, payload: object):
@@ -59,12 +61,13 @@ def app(db_path: str | Path, upload_dir: str | Path):
             
             if method == "GET":
                 if path.startswith("/uploads/"):
-                    filename = path[len("/uploads/"):]
+                    # Serve only a generated basename, never a caller-controlled path.
+                    filename = Path(path[len("/uploads/"):]).name
                     return _static(start_response, upload_dir / filename)
                 if path == "/":
-                    return _static(start_response, Path("frontend/index.html"))
+                    return _static(start_response, FRONTEND_DIR / "index.html")
                 if path in ("/style.css", "/app.js"):
-                    return _static(start_response, Path("frontend") / path.lstrip("/"))
+                    return _static(start_response, FRONTEND_DIR / path.lstrip("/"))
 
             if method == "GET" and path == "/health":
                 return _json(start_response, "200 OK", {"ok": True})

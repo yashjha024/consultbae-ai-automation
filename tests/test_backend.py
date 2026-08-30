@@ -3,13 +3,16 @@ import sqlite3
 import tempfile
 import unittest
 import wave
+from io import BytesIO
 from pathlib import Path
+from wsgiref.util import setup_testing_defaults
 
+from consultbae.api import app
 from consultbae.audio import AudioAnalysisError, analyze_audio
 from consultbae.ingest import ingest
 from consultbae.normalization import normalize_city, normalize_email, normalize_name, normalize_phone, normalize_status
 
-DATA = Path(r"C:\Users\yashj\Downloads")
+DATA = Path(__file__).resolve().parents[1] / "data" / "input"
 
 
 class NormalizationTests(unittest.TestCase):
@@ -27,7 +30,6 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(normalize_status("Y"), "verified")
 
 
-@unittest.skipUnless(DATA.exists(), "assignment source files not available")
 class IngestionTests(unittest.TestCase):
     def test_ingestion_is_idempotent_and_conservative(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -63,6 +65,49 @@ class AudioTests(unittest.TestCase):
             bad.write_bytes(b"broken")
             with self.assertRaises(AudioAnalysisError):
                 analyze_audio(bad)
+
+
+class ApiTests(unittest.TestCase):
+    @staticmethod
+    def request(application, method, path, body=b"", content_type=""):
+        environ = {}
+        setup_testing_defaults(environ)
+        environ.update({"REQUEST_METHOD": method, "PATH_INFO": path, "wsgi.input": BytesIO(body), "CONTENT_LENGTH": str(len(body))})
+        if content_type:
+            environ["CONTENT_TYPE"] = content_type
+        captured = []
+        response = b"".join(application(environ, lambda status, headers: captured.extend([status, headers])))
+        return captured[0], dict(captured[1]), response
+
+    def test_static_files_upload_and_submission_listing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wav = root / "sample.wav"
+            with wave.open(str(wav), "wb") as f:
+                f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\0\0" * 8000)
+            boundary = "----ConsultBaeTestBoundary"
+            payload = b"".join([
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\nTest Applicant\r\n".encode(),
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"phone\"\r\n\r\n9000000999\r\n".encode(),
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"sample.wav\"\r\nContent-Type: audio/wav\r\n\r\n".encode(),
+                wav.read_bytes(), f"\r\n--{boundary}--\r\n".encode(),
+            ])
+            application = app(root / "db.sqlite3", root / "uploads")
+            status, _, page = self.request(application, "GET", "/")
+            self.assertEqual(status, "200 OK")
+            self.assertIn(b"Submit your audio", page)
+            status, _, result = self.request(application, "POST", "/audio", payload, f"multipart/form-data; boundary={boundary}")
+            self.assertEqual(status, "201 Created")
+            metadata = __import__("json").loads(result)["metadata"]
+            self.assertEqual(metadata["duration_seconds"], 1.0)
+            status, _, listing = self.request(application, "GET", "/submissions")
+            self.assertEqual(status, "200 OK")
+            row = __import__("json").loads(listing)[0]
+            self.assertEqual(row["canonical_name"], "Test Applicant")
+            filename = Path(row["stored_path"]).name
+            status, _, audio = self.request(application, "GET", f"/uploads/{filename}")
+            self.assertEqual(status, "200 OK")
+            self.assertEqual(audio[:4], b"RIFF")
 
 
 if __name__ == "__main__":

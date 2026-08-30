@@ -10,11 +10,11 @@ The schema is in `consultbae/database.py`. The database is created automatically
 
 ## Run it
 
-Use the bundled Python runtime in this desktop environment (the project has no pip dependencies):
+Python 3.12+ is required; the project has no pip dependencies. The supplied CSV fixtures are committed in `data/input/`, so a fresh clone runs without machine-specific paths:
 
 ```powershell
-# 1. Ingest the raw data (requires the CSV files in your Downloads folder or specified dir)
-python -m consultbae.ingest --db data/consultbae.sqlite3 --input-dir 'C:\Users\yashj\Downloads'
+# 1. Ingest the committed source fixtures
+python -m consultbae.ingest --db data/consultbae.sqlite3 --input-dir data/input
 
 # 2. Run backend tests
 python -m unittest discover -s tests -v
@@ -29,10 +29,11 @@ Once the server is running, open `http://127.0.0.1:8000/` in your browser to acc
 The no-code duplicate detection workflow is located at `automation/n8n-duplicate-detection.json`.
 To run it:
 1. Import the JSON file into an n8n instance.
-2. Ensure you have an SQLite credential configured pointing to the `data/consultbae.sqlite3` database file (or an absolute path to it).
-3. The workflow uses a Webhook trigger (`/webhook/consultbae-duplicate-check`). Send a POST request with `{"name": "...", "phone": "...", "email": "..."}` to trigger it.
+2. Replace the placeholder SQLite credential with one pointing to the clone's `data/consultbae.sqlite3` database file. When n8n runs in Docker, mount this repository folder and use the container path.
+3. Set `CONSULTBAE_DUPLICATE_ALERT_URL` to your Slack/email relay/webhook endpoint. The workflow still returns its duplicate decision if this optional alert endpoint is not configured.
+4. The workflow uses a Webhook trigger (`/webhook/consultbae-duplicate-check`). Send a POST request with `{"name": "...", "phone": "...", "email": "..."}` to trigger it. It normalizes the phone/email before looking up the canonical `persons` table.
 
-For portability, download the supplied CSVs and pass their directory with `--input-dir`; filenames must remain the supplied names. Re-running the same unchanged files is idempotent: a stable source-name/row/content key prevents extra source rows or people.
+To ingest replacement CSVs, pass their directory with `--input-dir`; filenames must remain the supplied names. Re-running the same unchanged files is idempotent: a stable source-name/row/content key prevents extra source rows or people.
 
 ## Matching strategy
 
@@ -51,7 +52,7 @@ WAV files work with no third-party packages and provide duration, sample rate in
 
 ## Data report and remaining scope
 
-See [the data-quality report](reports/data-quality.md) for all discovered issues and [the self-audit](reports/self-audit.md) for the assignment boundary. A real n8n/Make/Zapier flow, browser UI (record/upload and playable list), deployment, video, and git commits are remaining submission work.
+See [the data-quality report](reports/data-quality.md) for all discovered issues and [the self-audit](reports/self-audit.md) for the assignment boundary. Deployment and the required screen recording remain submission steps.
 
 ## Stuck log
 

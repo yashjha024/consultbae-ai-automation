@@ -3,82 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConsultBae - Audio Submissions</title>
+    <title>ConsultBae Audio Portal</title>
     <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="glass-container">
-        <header>
-            <h1>ConsultBae Audio Portal</h1>
-            <nav>
-                <button id="nav-submit" class="active">Submit Audio</button>
-                <button id="nav-list">View Submissions</button>
-            </nav>
-        </header>
-
-        <main id="view-submit" class="view active-view">
-            <form id="audio-form">
-                <div class="input-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" required placeholder="e.g. Jane Doe">
-                </div>
-                <div class="input-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="text" id="phone" name="phone" required placeholder="+91 90000 00000">
-                </div>
-                
-                <div class="input-group">
-                    <label>Audio Source</label>
-                    <div class="audio-source-toggle">
-                        <input type="radio" id="mode-upload" name="audio-mode" value="upload" checked>
-                        <label for="mode-upload">Upload File</label>
-                        
-                        <input type="radio" id="mode-record" name="audio-mode" value="record">
-                        <label for="mode-record">Record Now</label>
-                    </div>
-                </div>
-
-                <div id="section-upload" class="audio-section active-section">
-                    <input type="file" id="audio-file" name="audio" accept="audio/*">
-                </div>
-
-                <div id="section-record" class="audio-section">
-                    <div class="record-controls">
-                        <button type="button" id="btn-record" class="btn-record">Start Recording</button>
-                        <button type="button" id="btn-stop" class="btn-stop" disabled>Stop Recording</button>
-                    </div>
-                    <audio id="record-preview" controls class="hidden"></audio>
-                </div>
-
-                <div class="error-message hidden" id="form-error"></div>
-                <div class="success-message hidden" id="form-success"></div>
-
-                <button type="submit" id="btn-submit" class="btn-primary">Submit Application</button>
-            </form>
-        </main>
-
-        <main id="view-list" class="view hidden">
-            <div class="table-container">
-                <table id="submissions-table">
-                    <thead>
-                        <tr>
-                            <th>Applicant</th>
-                            <th>Duration</th>
-                            <th>Sample Rate</th>
-                            <th>Bitrate</th>
-                            <th>Loudness</th>
-                            <th>Playback</th>
-                        </tr>
-                    </thead>
-                    <tbody id="submissions-body">
-                        <!-- Rows will be injected here -->
-                    </tbody>
-                </table>
-                <div id="list-empty" class="hidden">No submissions found.</div>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <span class="logo">ConsultBae</span>
+                <span class="divider">|</span>
+                <span class="product-name">Audio Portal</span>
             </div>
-        </main>
-    </div>
+            <nav class="main-nav">
+                <button id="nav-submit" class="nav-tab active">Submit Response</button>
+                <button id="nav-list" class="nav-tab">Review Submissions</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" id="view-submit">
+        <div class="page-header">
+            <h1>Submit your audio</h1>
+            <p>Record your response or upload an existing recording.</p>
+        </div>
+
+        <form id="audio-form">
+            <!-- Applicant Details -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>Applicant Details</h2>
+                </div>
+                <div class="card-body form-grid">
+                    <div class="input-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required placeholder="Jane Doe">
+                    </div>
+                    <div class="input-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone" required placeholder="+91 90000 00000">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Audio Response -->
+            <section class="card">
+                <div class="card-header space-between">
+                    <h2>Audio Response</h2>
+                    <div class="mode-toggle">
+                        <label class="toggle-btn" id="label-record">
+                            <input type="radio" name="audio-mode" value="record" class="mode-radio">
+                            Record Audio
+                        </label>
+                        <label class="toggle-btn active" id="label-upload">
+                            <input type="radio" name="audio-mode" value="upload" class="mode-radio" checked>
+                            Upload File
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Upload View -->
+                    <div id="section-upload" class="audio-section active">
+                        <div id="drop-zone" class="drop-zone">
+                            <div class="drop-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z"></path></svg>
+                            </div>
+                            <p class="drop-text-primary">Click to upload or drag and drop</p>
+                            <p class="drop-text-secondary">WAV files are analyzed automatically</p>
+                            <input type="file" id="audio-file" name="audio" accept="audio/wav,.wav">
+                        </div>
+
+                        <!-- Selected File State -->
+                        <div id="file-selected-state" class="file-selected hidden">
+                            <div class="file-info">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"></path></svg>
+                                <span id="selected-filename"></span>
+                            </div>
+                            <button type="button" id="btn-remove-file" class="btn-ghost-danger">Remove</button>
+                        </div>
+                    </div>
+
+                    <!-- Record View -->
+                    <div id="section-record" class="audio-section hidden">
+                        <div class="record-container">
+
+                            <!-- Record Ready State -->
+                            <div id="record-ready" class="record-state">
+                                <button type="button" id="btn-record" class="btn-record-circle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256"><path d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0ZM200,128a8,8,0,0,1-16,0,56,56,0,0,1-112,0,8,8,0,0,1-16,0,72.08,72.08,0,0,0,64,71.49V232a8,8,0,0,0,16,0V199.49A72.08,72.08,0,0,0,200,128Z"></path></svg>
+                                </button>
+                                <p>Click to start recording</p>
+                            </div>
+
+                            <!-- Recording Active State -->
+                            <div id="record-active" class="record-state hidden">
+                                <div class="timer-display">
+                                    <div class="recording-dot"></div>
+                                    <span id="record-timer">00:00</span>
+                                </div>
+                                <button type="button" id="btn-stop" class="btn-stop">
+                                    Stop Recording
+                                </button>
+                            </div>
+
+                            <!-- Record Preview State -->
+                            <div id="record-preview-state" class="record-state hidden">
+                                <p class="preview-title">Recording complete</p>
+                                <!-- Using native audio, but styled via CSS to fit perfectly -->
+                                <audio id="record-preview-audio" controls class="native-audio-player"></audio>
+                                <button type="button" id="btn-re-record" class="btn-ghost">
+                                    Delete & Record Again
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Banner -->
+            <div id="form-error" class="alert-error hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"></path></svg>
+                <div id="form-error-msg">Error message goes here</div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-submit" class="btn-primary">
+                Submit Response
+            </button>
+        </form>
+
+        <!-- Success State -->
+        <div id="success-state" class="success-card hidden">
+            <div class="success-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path></svg>
+            </div>
+            <h2>Submission Successful</h2>
+            <p id="success-msg">Your audio response has been saved securely.</p>
+
+            <div class="success-actions">
+                <button type="button" id="btn-submit-another" class="btn-outline">
+                    Submit Another
+                </button>
+                <button type="button" id="btn-view-subs" class="btn-primary-small">
+                    View Submissions
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Submissions Dashboard View -->
+    <main class="container-wide hidden" id="view-list">
+        <div class="page-header space-between align-center mobile-col">
+            <div>
+                <h1>Review Submissions</h1>
+                <p>All recorded responses from applicants.</p>
+            </div>
+            <button id="btn-refresh-list" class="btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a96,96,0,1,1-96-96,8,8,0,0,1,0,16,80,80,0,1,0,80,80,8,8,0,0,1,16,0Zm-96-48a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v48a8,8,0,0,1-16,0V99.31l-34.34,34.35a8,8,0,0,1-11.32-11.32L176.69,88H136A8,8,0,0,1,128,80Z"></path></svg>
+                Refresh
+            </button>
+        </div>
+
+        <div id="submissions-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading submissions...</p>
+        </div>
+
+        <div id="submissions-empty" class="empty-state hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216ZM128,104a32,32,0,1,0,32,32A32,32,0,0,0,128,104Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,128,152Z"></path></svg>
+            <h3>No submissions yet</h3>
+            <p>When applicants submit audio, it will appear here.</p>
+        </div>
+
+        <div id="submissions-grid" class="submissions-grid hidden">
+            <!-- Review cards will be injected here -->
+        </div>
+    </main>
+
     <script src="/app.js"></script>
 </body>
 </html>
