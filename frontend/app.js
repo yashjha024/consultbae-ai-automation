@@ -35,10 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.parentElement.classList.add('active');
 
             if (e.target.value === 'upload') {
+                secUpload.classList.add('active');
                 secUpload.classList.remove('hidden');
+                secRecord.classList.remove('active');
                 secRecord.classList.add('hidden');
             } else {
+                secRecord.classList.add('active');
                 secRecord.classList.remove('hidden');
+                secUpload.classList.remove('active');
                 secUpload.classList.add('hidden');
             }
         });
@@ -164,7 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
             audioSource = null;
             recordingStream = null;
             recordedBlob = encodeWav(audioChunks, sampleRate);
+            recordPreviewAudio.classList.add('hidden');
             recordPreviewAudio.src = URL.createObjectURL(recordedBlob);
+            recordPreviewAudio.addEventListener('loadedmetadata', () => {
+                recordPreviewAudio.classList.remove('hidden');
+            }, { once: true });
             stateActive.classList.add('hidden');
             statePreview.classList.remove('hidden');
         }
@@ -174,22 +182,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
         const data = new ArrayBuffer(44 + length * 2);
         const view = new DataView(data);
-        const write = (offset, value) => view.setUint32(offset, value, true);
-        view.setUint32(0, 0x46464952, false); // RIFF
-        write(4, 36 + length * 2);
-        view.setUint32(8, 0x45564157, false); // WAVE
-        view.setUint32(12, 0x20746d66, false); // fmt
-        write(16, 16); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
-        write(24, sampleRate); write(28, sampleRate * 2);
-        view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-        view.setUint32(36, 0x64617461, false); // data
-        write(40, length * 2);
+        
+        const writeString = (offset, string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, length * 2, true);
+
         let offset = 44;
-        chunks.forEach(chunk => chunk.forEach(sample => {
-            const clamped = Math.max(-1, Math.min(1, sample));
-            view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
-            offset += 2;
-        }));
+        chunks.forEach(chunk => {
+            for (let i = 0; i < chunk.length; i++) {
+                const clamped = Math.max(-1, Math.min(1, chunk[i]));
+                view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF, true);
+                offset += 2;
+            }
+        });
+        
         return new Blob([data], { type: 'audio/wav' });
     }
 
@@ -271,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const originalText = btnSubmit.innerHTML;
-        btnSubmit.innerHTML = `<div class="spinner" style="width: 1.25rem; height: 1.25rem; border-width: 2px; border-top-color: white; margin: 0; display: inline-block;"></div> Submitting...`;
+        btnSubmit.innerHTML = `<div class="spinner" style="width: 1.25rem; height: 1.25rem; border-width: 2px; border-top-color: white; margin: 0; display: inline-block; vertical-align: text-bottom;"></div> Submitting...`;
         btnSubmit.disabled = true;
 
         try {
@@ -290,10 +312,14 @@ document.addEventListener('DOMContentLoaded', () => {
             form.classList.add('hidden');
             successState.classList.remove('hidden');
 
+            const successMsg = document.getElementById('success-msg');
+            successMsg.textContent = 'Your audio response has been saved securely.';
             if (data.analysis_error) {
-                document.getElementById('success-msg').textContent = 'Saved securely, but analysis failed: ' + data.analysis_error;
-            } else {
-                document.getElementById('success-msg').textContent = 'Your audio response has been saved securely.';
+                const errorSpan = document.createElement('div');
+                errorSpan.className = 'error-badge';
+                errorSpan.style.marginTop = '1rem';
+                errorSpan.textContent = 'Analysis warning: ' + data.analysis_error;
+                successMsg.appendChild(errorSpan);
             }
 
         } catch (err) {

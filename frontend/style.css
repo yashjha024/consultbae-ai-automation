@@ -283,7 +283,16 @@ input[type="text"]::placeholder {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem 0;
+    border: 2px dashed var(--c-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--c-bg-card);
+    padding: 2.5rem 1.5rem;
+    transition: all 0.2s;
+}
+
+.record-container:hover {
+    border-color: var(--c-primary);
+    background-color: #FAFAFA;
 }
 
 .record-state {
@@ -452,7 +461,7 @@ input[type="text"]::placeholder {
     cursor: pointer;
     transition: color 0.2s;
     padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
 }
 .btn-ghost-danger:hover { background: var(--c-danger-light); }
 
