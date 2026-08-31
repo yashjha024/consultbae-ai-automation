@@ -26,14 +26,29 @@ python -m consultbae.api --db data/consultbae.sqlite3 --uploads storage/uploads 
 Once the server is running, open `http://127.0.0.1:8000/` in your browser to access the Audio Collection App.
 
 ### n8n Automation
-The no-code duplicate detection workflow is located at `automation/n8n-duplicate-detection.json`.
-To run it:
-1. Import the JSON file into an n8n instance.
-2. Replace the placeholder SQLite credential with one pointing to the clone's `data/consultbae.sqlite3` database file. When n8n runs in Docker, mount this repository folder and use the container path.
-3. Set `CONSULTBAE_DUPLICATE_ALERT_URL` to your Slack/email relay/webhook endpoint. The workflow still returns its duplicate decision if this optional alert endpoint is not configured.
-4. The workflow uses a Webhook trigger (`/webhook/consultbae-duplicate-check`). Send a POST request with `{"name": "...", "phone": "...", "email": "..."}` to trigger it. It normalizes the phone/email before looking up the canonical `persons` table.
 
-To ingest replacement CSVs, pass their directory with `--input-dir`; filenames must remain the supplied names. Re-running the same unchanged files is idempotent: a stable source-name/row/content key prevents extra source rows or people.
+The no-code duplicate detection workflow is located at
+`automation/n8n-duplicate-detection.json`.
+
+To run it:
+
+1. Import the JSON file into an n8n instance.
+2. Start the ConsultBae Python API so that the workflow can call
+   the existing `/people` endpoint.
+3. Activate/publish the workflow.
+4. Configure `CONSULTBAE_DUPLICATE_ALERT_URL` if a real external
+   duplicate notification endpoint is desired.
+5. Send a POST request to:
+   `/webhook/consultbae-duplicate-check`
+
+Example payload:
+
+```json
+{
+  "name": "Candidate Name",
+  "phone": "+919000000001",
+  "email": "candidate@example.com"
+}
 
 ## Matching strategy
 
@@ -52,12 +67,91 @@ WAV files work with no third-party packages and provide duration, sample rate in
 
 ## Data report and remaining scope
 
-See [the data-quality report](reports/data-quality.md) for all discovered issues and [the scale stretch report](reports/scale-stretch.md) for the 5,000-worker weekend scaling analysis. Deployment and the required screen recording remain submission steps.
+See [the data-quality report](reports/data-quality.md) for all discovered issues [the Task 5 scaling analysis](reports/scale-stretch.md) for the 5,000-worker stretch scenario.
 
 ## Stuck log
 
-1. **Gig CSV anomalies**: The gig CSV looked valid to a basic CSV reader even though one row had every value shifted under the wrong header. I compared field semantics rather than only checking column counts, rejected an unsafe "shift it back" repair, and preserve it as an invalid record.
-2. **Repeated headers**: The CBNexus duplicate header was parsed as a normal data row. I added a source-specific repeated-header detector so that it remains auditable but cannot become a person.
-3. **Heavyweight audio dependencies**: Audio libraries and `ffprobe` were not available in this environment. I rejected adding a heavyweight conversion dependency for the assignment and implemented reliable WAV analysis plus an optional `ffprobe` adapter with a clear unsupported-format error.
-4. **Serving frontend and uploads efficiently**: The initial API did not serve static files. Rather than configuring a separate web server or forcing the user to run two separate processes, I decided to build minimal static-file serving capabilities directly into the WSGI app in `api.py`. This ensures a seamless, single-command startup for reviewers.
-5. **n8n SQLite integration context**: When configuring the n8n automation, the local file paths for SQLite need to be precise, especially when running in Docker vs Local. I decided to use the base SQLite node and parameterize the query with `normalized_phone` and `normalized_email` based on the webhook's JSON body to align with the core backend's duplicate matching strategy.
+### 1. Identifying a malformed row in the Gig CSV
+
+The Gig CSV parsed successfully as a CSV, but one physical row had values
+shifted into the wrong columns. A basic CSV parser therefore gave no error.
+
+I first inspected the row against the expected field semantics rather than
+assuming that successful CSV parsing meant the row was valid. I used AI to
+help reason about whether the row could be safely reconstructed from the
+surrounding columns.
+
+I considered automatically shifting the values back into their expected
+columns, but rejected that approach because it would require assumptions
+about which value belonged to which field. A wrong repair would silently
+create a false person or incorrect contact information.
+
+Instead, I preserved the raw row for provenance, marked it invalid, and
+excluded it from entity matching.
+
+I also found a completely blank Gig row and treated it the same way:
+auditable, but not eligible to create or match a person.
+
+The final ingestion result confirmed the behavior: 105 physical rows,
+3 invalid rows, 42 strong-identifier matches, and 60 canonical people.
+
+### 2. Browser recording produced an invalid WAV
+
+The browser microphone recording appeared to work, but the recorded preview
+showed `0:00 / 0:00`. When the recording was submitted, the backend reported
+that the file did not start with a valid RIFF header.
+
+This initially looked like a microphone or MediaRecorder problem. I used AI
+to help trace the complete path from microphone capture → recorded chunks →
+WAV encoding → Blob/File → browser preview → backend analysis. I also
+searched the RIFF/WAVE structure and JavaScript `DataView` byte ordering.
+
+The key clue was that a separately uploaded known-good WAV worked correctly,
+while the browser-generated file did not. That isolated the problem to the
+WAV construction rather than microphone capture.
+
+I considered adding a heavyweight audio dependency or using another
+conversion tool, but rejected that because the assignment only required a
+small working application and the project could handle PCM WAV directly.
+
+The actual issue was incorrect construction of the WAV header. I rewrote
+the encoder to generate a standards-compliant RIFF/WAVE PCM header and
+correctly calculate the chunk sizes and byte fields.
+
+I then validated the generated file independently using Python's standard
+`wave` module. A synthetic recording produced a valid WAV with non-zero
+duration, 44.1 kHz sampling, 16-bit PCM and 1 channel. I then verified the
+real browser recording path before continuing with the submission flow.
+
+### 3. n8n workflow compatibility and webhook debugging
+
+The first n8n workflow used a database node that was not recognized by the
+installed n8n environment. The workflow displayed an unresolved node and
+could not execute.
+
+I used the n8n error output and AI-assisted debugging to determine whether
+the issue was the workflow logic or the node/runtime itself. I rejected
+installing a custom database integration just to make the original design
+work, because it would make the workflow more dependent on a specific n8n
+environment.
+
+I instead changed the automation to use n8n's standard HTTP Request node to
+call the existing ConsultBae API, keeping SQLite owned by the Python
+backend while n8n remains responsible for orchestration and duplicate
+detection.
+
+The next issue was webhook behavior. I initially tested the temporary
+`/webhook-test/` endpoint while the frontend was using the production
+`/webhook/` endpoint. I traced the difference and switched the application
+to the production webhook for the real workflow.
+
+I also encountered an `Unused Respond to Webhook node found in the workflow`
+error. I simplified the response design so both branches converge into a
+single `Respond to Webhook` node.
+
+Finally, I tested both paths against the live n8n workflow:
+
+- New candidate → `duplicate: false`
+- Existing candidate → `duplicate: true`
+
+Both returned HTTP 200 and completed successfully.
