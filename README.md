@@ -50,6 +50,8 @@ Example payload:
   "email": "candidate@example.com"
 }
 
+```
+
 ## Matching strategy
 
 1. Normalize email (trim, case-fold, basic address validation) and Indian phones (local/leading-zero/`91` forms become `+91` + 10 digits).
