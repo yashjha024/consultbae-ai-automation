@@ -52,7 +52,7 @@ WAV files work with no third-party packages and provide duration, sample rate in
 
 ## Data report and remaining scope
 
-See [the data-quality report](reports/data-quality.md) for all discovered issues and [the self-audit](reports/self-audit.md) for the assignment boundary. Deployment and the required screen recording remain submission steps.
+See [the data-quality report](reports/data-quality.md) for all discovered issues and [the scale stretch report](reports/scale-stretch.md) for the 5,000-worker weekend scaling analysis. Deployment and the required screen recording remain submission steps.
 
 ## Stuck log
 
