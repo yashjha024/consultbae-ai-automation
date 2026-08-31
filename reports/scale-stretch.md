@@ -1,7 +1,7 @@
 # Task 5 — Scaling to 5,000 Workers Over a Single Weekend
 
 ## Executive Summary
-Launching the audio collection app to 5,000 gig workers over a 48-hour weekend translates to a high-concurrency burst workload. If 5,000 workers submit 1–3 audio recordings each (~10,000 total submissions), peak traffic will likely reach 15–30 requests/second with concurrent file uploads. 
+Launching the audio collection app to 5,000 gig workers over a 48-hour weekend translates to a high-concurrency burst workload. If 5,000 workers submit 1–3 audio recordings each (~10,000 total submissions), the average traffic over 48 hours would be modest, but the system must handle bursts when large groups submit simultaneously. 
 
 ---
 
@@ -15,7 +15,7 @@ Launching the audio collection app to 5,000 gig workers over a 48-hour weekend t
    - **Failure Mode**: SQLite only supports a single writer at a time. Concurrent transactions attempting to insert `persons` and `audio_submissions` simultaneously will exhaust the default timeout and throw `sqlite3.OperationalError: database is locked`.
 
 3. **Local Filesystem & Disk Space Exhaustion**:
-   - **Failure Mode**: Storing uncompressed 16-bit 44.1kHz WAV files locally on a single instance consumes ~5MB per minute of audio. 10,000 submissions average ~50GB to 150GB of disk space. A single server running low on IOPS or disk space will crash the application and corrupt local storage.
+   - **Failure Mode**: Storing uncompressed 16-bit 44.1kHz WAV files locally on a single instance consumes ~5MB per minute of audio. At roughly 1–3 minutes per submission, uncompressed 16-bit 44.1kHz WAV files would consume approximately 5–15 MB per submission, or ~50–150 GB for 10,000 submissions. A single server running low on IOPS or disk space will crash the application and corrupt local storage.
 
 4. **Network Upload Failures & Mobile Retries**:
    - **Failure Mode**: Gig workers on unreliable mobile 3G/4G networks will suffer frequent connection drops during large uploads. Without chunked/resumable upload mechanisms, users will repeatedly re-record or re-upload, multiplying the load on the backend.
@@ -32,7 +32,7 @@ Launching the audio collection app to 5,000 gig workers over a 48-hour weekend t
 ### B. Asynchronous Event-Driven Pipeline
 - **Decouple API from Processing**: Once S3 receives the file, an S3 Event Notification or webhook triggers a lightweight worker (AWS Lambda or Celery/Redis worker).
 - **Background Audio Analysis**: Metadata extraction (duration, sample rate, bitrate, loudness, noise floor) runs asynchronously without blocking user-facing APIs.
-- **Worker Auto-scaling**: Serverless workers scale instantaneously from 0 to 500 concurrent invocations without managing physical infrastructure.
+- **Worker Auto-scaling**: Serverless workers can scale horizontally based on queue depth and concurrency, subject to configured provider limits.
 
 ### C. Database Architecture
 - **Managed PostgreSQL (e.g., AWS RDS / Supabase / Neon)** with connection pooling (PgBouncer) replacing single-file SQLite.
@@ -52,7 +52,7 @@ Launching the audio collection app to 5,000 gig workers over a 48-hour weekend t
 
 | Component | Architecture Choice | Estimated Weekend Cost |
 |---|---|---|
-| **Storage (Object Storage)** | Cloudflare R2 / AWS S3 (~10 GB compressed audio) | **$0.15** |
+| **Storage (Object Storage)** | Cloudflare R2 / AWS S3 (~10 GB compressed audio (assuming 10,000 × ~2-minute recordings at ~64 kbps)) | **$0.15** |
 | **Data Egress / Bandwidth** | Cloudflare R2 (Free egress) / S3 with CloudFront | **$0.00 – $0.90** |
 | **Compute & API** | 1x Cloud Container (Render/Fly.io) or AWS Lambda | **$2.00 – $5.00** |
 | **Database** | Managed Postgres (Neon / Supabase Free/Pro tier) | **$0.00 – $10.00** |
