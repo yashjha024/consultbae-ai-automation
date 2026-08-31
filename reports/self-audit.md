@@ -5,4 +5,4 @@
 - [x] Task 3 backend: `analyze_audio()` extracts WAV duration, sample rate, bitrate, and RMS loudness. The HTTP API stores uploads, links/creates people, and stores analysis results/errors.
 - [x] Task 3 frontend: A responsive single-page application is implemented in `frontend/`, providing WAV file upload and Web Audio API in-browser recording (encoded to WAV), plus a listing view with an HTML5 `<audio>` player.
 - [x] Task 4: The specific, quantified report is in `reports/data-quality.md`.
-- [ ] Task 5: Optional stretch write-up is left out to keep this assignment scoped.
+- [x] Task 5: Complete 1-page scaling analysis covering architecture failure points, direct object storage uploads, asynchronous worker queues, duplicate resilience, and cost breakdown in `reports/scale-stretch.md`.

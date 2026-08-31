@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
 data/*.sqlite3
-storage/uploads/*
-!storage/uploads/.gitkeep
+storage/
 ConsultBae_Assignment.pdf
 test_audio.wav
